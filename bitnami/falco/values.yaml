@@ -1,0 +1,677 @@
+## @section Global parameters
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+
+## @param global.imageRegistry Global Docker image registry
+## @param global.imagePullSecrets Global Docker registry secret names as an array
+## @param global.storageClass Global StorageClass for Persistent Volume(s)
+##
+global:
+  imageRegistry: ""
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  storageClass: ""
+
+## @section Common parameters
+
+## @param kubeVersion Override Kubernetes version
+##
+kubeVersion: ""
+## @param nameOverride String to partially override common.names.name
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override common.names.fullname
+##
+fullnameOverride: ""
+## @param namespaceOverride String to fully override common.names.namespace
+##
+namespaceOverride: ""
+## @param commonLabels Labels to add to all deployed objects
+##
+commonLabels: {}
+## @param commonAnnotations Annotations to add to all deployed objects
+##
+commonAnnotations: {}
+## @param clusterDomain Kubernetes cluster domain name
+##
+clusterDomain: cluster.local
+## @param extraDeploy Array of extra objects to deploy with the release
+##
+extraDeploy: []
+
+## @section Falco Daemonset Parameters
+
+## Falco daemonset
+##
+falco:
+  ## @param falco.enabled Deploy Falco daemonset to the cluster
+  ##
+  enabled: true
+  ## Bitnami Falco image version
+  ## ref: https://hub.docker.com/r/bitnami/falco/tags/
+  ## @param falco.image.registry Falco image registry
+  ## @param falco.image.repository Falco image repository
+  ## @param falco.image.tag Falco image tag (immutable tags are recommended)
+  ## @param falco.image.pullPolicy Falco image pull policy
+  ## @param falco.image.pullSecrets Falco image pull secrets
+  ##
+  image:
+    registry: docker.io
+    repository: falcosecurity/falco #bitnami/falco
+    tag:  0.31.1 #IMAGE_TAG
+    ## Specify a imagePullPolicy
+    ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+    ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    ##
+    pullPolicy: IfNotPresent
+    ## Optionally specify an array of imagePullSecrets.
+    ## Secrets must be manually created in the namespace.
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+    ## e.g:
+    ## pullSecrets:
+    ##   - myRegistryKeySecretName
+    ##
+    pullSecrets: []
+  ## @param falco.replicaCount Number of Falco replicas to deploy
+  ##
+  replicaCount: 1
+
+  ## @param falco.containerPorts.http Falco HTTP container port
+  ##
+  containerPorts:
+    http: 8765
+
+  ## Configure extra options for Falco containers' liveness and readiness probes
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+  ## @param falco.livenessProbe.enabled Enable livenessProbe on Falco containers
+  ## @param falco.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+  ## @param falco.livenessProbe.periodSeconds Period seconds for livenessProbe
+  ## @param falco.livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+  ##
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 15
+    timeoutSeconds: 5
+
+  ## @param falco.readinessProbe.enabled Enable readinessProbe on Falco containers
+  ## @param falco.readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+  ## @param falco.readinessProbe.periodSeconds Period seconds for readinessProbe
+  ## @param falco.readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+  ##
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 5
+
+  ## @param falco.customLivenessProbe Custom livenessProbe that overrides the default one
+  ##
+  customLivenessProbe: {}
+  ## @param falco.customReadinessProbe Custom readinessProbe that overrides the default one
+  ##
+  customReadinessProbe: {}
+  ## @param falco.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
+  ## Falco resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ## @param falco.resources.limits The resources limits for the Falco containers
+  ## @param falco.resources.requests The requested resources for the Falco containers
+  ##
+  resources:
+    limits: {}
+    requests: {}
+
+  ## Configure Container Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  ## @param falco.containerSecurityContext.enabled Enabled Falco containers' Security Context
+  ## @param falco.containerSecurityContext.privileged Run as privileged
+  ##
+  containerSecurityContext:
+    enabled: true
+    privileged: true
+
+  ## @param falco.existingConfigmap The name of an existing ConfigMap with your custom configuration for falco
+  ##
+  existingConfigmap:
+  ## @param falco.extraArgs Additional arguments passed to falco
+  ## Example:
+  ## extraArgs:
+  ##   - --namespaces={{ include "common.names.namespace" . }}
+  ##
+  extraArgs: []
+
+  ## @param falco.hostAliases Falco pods host aliases
+  ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  ##
+  hostAliases: []
+  ## @param falco.podLabels Extra labels for Falco pods
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+  ##
+  podLabels: {}
+  ## @param falco.podAnnotations Annotations for Falco pods
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
+  ## @param falco.podAffinityPreset Pod affinity preset. Ignored if `falco.affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAffinityPreset: ""
+  ## @param falco.podAntiAffinityPreset Pod anti-affinity preset. Ignored if `falco.affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAntiAffinityPreset: ""
+  ## Pod Disruption Budget configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
+  ## @param falco.pdb.create Enable/disable a Pod Disruption Budget creation
+  ## @param falco.pdb.minAvailable Minimum number/percentage of pods that should remain scheduled
+  ## @param falco.pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable
+  ##
+  pdb:
+    create: false
+    minAvailable: 1
+    maxUnavailable: ""
+
+  ## Autoscaling configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+  ## @param falco.autoscaling.enabled Enable autoscaling for falco
+  ## @param falco.autoscaling.minReplicas Minimum number of Falco replicas
+  ## @param falco.autoscaling.maxReplicas Maximum number of Falco replicas
+  ## @param falco.autoscaling.targetCPU Target CPU utilization percentage
+  ## @param falco.autoscaling.targetMemory Target Memory utilization percentage
+  ##
+  autoscaling:
+    enabled: false
+    minReplicas: ""
+    maxReplicas: ""
+    targetCPU: ""
+    targetMemory: ""
+  ## Node falco.affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+  ##
+  nodeAffinityPreset:
+    ## @param falco.nodeAffinityPreset.type Node affinity preset type. Ignored if `falco.affinity` is set. Allowed values: `soft` or `hard`
+    ##
+    type: ""
+    ## @param falco.nodeAffinityPreset.key Node label key to match. Ignored if `falco.affinity` is set
+    ##
+    key: ""
+    ## @param falco.nodeAffinityPreset.values Node label values to match. Ignored if `falco.affinity` is set
+    ## E.g.
+    ## values:
+    ##   - e2e-az1
+    ##   - e2e-az2
+    ##
+    values: []
+  ## @param falco.affinity Affinity for Falco pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ## NOTE: `falco.podAffinityPreset`, `falco.podAntiAffinityPreset`, and `falco.nodeAffinityPreset` will be ignored when it's set
+  ##
+  affinity: {}
+  ## @param falco.nodeSelector Node labels for Falco pods assignment
+  ## ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+  ## @param falco.tolerations [array] Tolerations for Falco pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
+  ## @param falco.updateStrategy.type Falco daemonset strategy type
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+  ##
+  updateStrategy:
+    ## StrategyType
+    ## Can be set to RollingUpdate or OnDelete
+    ##
+    type: RollingUpdate
+
+  ## @param falco.priorityClassName Falco pods' priorityClassName
+  ##
+  priorityClassName: ""
+  ## @param falco.terminationGracePeriodSeconds Seconds Airflow web pod needs to terminate gracefully
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods
+  ##
+  terminationGracePeriodSeconds: ""
+  ## @param falco.lifecycleHooks for the Falco container(s) to automate configuration before or after startup
+  ##
+  lifecycleHooks: {}
+  ## @param falco.extraEnvVars Array with extra environment variables to add to Falco nodes
+  ## e.g:
+  ## extraEnvVars:
+  ##   - name: FOO
+  ##     value: "bar"
+  ##
+  extraEnvVars: []
+  ## @param falco.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for Falco nodes
+  ##
+  extraEnvVarsCM: ""
+  ## @param falco.extraEnvVarsSecret Name of existing Secret containing extra env vars for Falco nodes
+  ##
+  extraEnvVarsSecret: ""
+  ## @param falco.extraVolumes Optionally specify extra list of additional volumes for the Falco pod(s)
+  ##
+  extraVolumes: []
+  ## @param falco.extraVolumeMounts Optionally specify extra list of additional volumeMounts for the Falco container(s)
+  ##
+  extraVolumeMounts: []
+  ## @param falco.sidecars Add additional sidecar containers to the Falco pod(s)
+  ## e.g:
+  ## sidecars:
+  ##   - name: your-image-name
+  ##     image: your-image
+  ##     imagePullPolicy: Always
+  ##     ports:
+  ##       - name: portname
+  ##         containerPort: 1234
+  ##
+  sidecars: {}
+  ## @param falco.initContainers Add additional init containers to the Falco pod(s)
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ## e.g:
+  ## initContainers:
+  ##  - name: your-image-name
+  ##    image: your-image
+  ##    imagePullPolicy: Always
+  ##    command: ['sh', '-c', 'echo "hello world"']
+  ##
+  initContainers: {}
+
+  ## @section Traffic Exposure Parameters
+
+  ## Falco service parameters
+  ##
+  service:
+    ## @param falco.service.type Falco service type
+    ##
+    type: ClusterIP
+    ## @param falco.service.ports.http Falco service HTTP port
+    ##
+    ports:
+      http: 8765
+    ## Node ports to expose
+    ## @param falco.service.nodePorts.http Node port for HTTP
+    ## NOTE: choose port between <30000-32767>
+    ##
+    nodePorts:
+      http: ""
+    ## @param falco.service.clusterIP Falco service Cluster IP
+    ## e.g.:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
+    ## @param falco.service.loadBalancerIP Falco service Load Balancer IP
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
+    ##
+    loadBalancerIP: ""
+    ## @param falco.service.loadBalancerSourceRanges Falco service Load Balancer sources
+    ## ref: https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+    ## e.g:
+    ## loadBalancerSourceRanges:
+    ##   - 10.10.10.0/24
+    ##
+    loadBalancerSourceRanges: []
+    ## @param falco.service.externalTrafficPolicy Falco service external traffic policy
+    ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+    ##
+    externalTrafficPolicy: Cluster
+    ## @param falco.service.annotations Additional custom annotations for Falco service
+    ##
+    annotations: {}
+    ## @param falco.service.extraPorts Extra ports to expose in Falco service (normally used with the `sidecars` value)
+    ##
+    extraPorts: []
+    ## @param falco.service.sessionAffinity Control where client requests go, to the same pod or round-robin
+    ## Values: ClientIP or None
+    ## ref: https://kubernetes.io/docs/user-guide/services/
+    ##
+    sessionAffinity: None
+    ## @param falco.service.sessionAffinityConfig Additional settings for the sessionAffinity
+    ## sessionAffinityConfig:
+    ##   clientIP:
+    ##     timeoutSeconds: 300
+    ##
+    sessionAffinityConfig: {}
+
+  ## @section Other Parameters
+
+  ## RBAC configuration
+  ##
+  rbac:
+    ## @param falco.rbac.create Specifies whether RBAC resources should be created
+    ##
+    create: true
+    ## @param falco.rbac.rules Custom RBAC rules to set
+    ## e.g:
+    ## rules:
+    ##   - apiGroups:
+    ##       - ""
+    ##     resources:
+    ##       - pods
+    ##     verbs:
+    ##       - get
+    ##       - list
+    ##
+    rules: []
+
+  ## ServiceAccount configuration
+  ##
+  serviceAccount:
+    ## @param falco.serviceAccount.create Specifies whether a ServiceAccount should be created
+    ##
+    create: true
+    ## @param falco.serviceAccount.name The name of the ServiceAccount to use.
+    ## If not set and create is true, a name is generated using the common.names.fullname template
+    ##
+    name: ""
+    ## @param falco.serviceAccount.annotations Additional Service Account annotations (evaluated as a template)
+    ##
+    annotations: {}
+    ## @param falco.serviceAccount.automountServiceAccountToken Automount service account token for the server service account
+    ##
+    automountServiceAccountToken: false
+
+  ## @section Falco Parameters
+
+  ## Kubernetes configuration
+  ##
+  ## @param falco.kubernetes.enabled Enable Kubernetes meta data collection via a connection to the Kubernetes API server
+  ## @param falco.kubernetes.apiAuth Authentication method to connect to the Kubernetes API.
+  ## @param falco.kubernetes.apiUrl Authentication url to connect to the Kubernetes API.
+  ## @param falco.kubernetes.enableNodeFilter If true, only the current node (on which Falco is running) will be considered when requesting metadata of pods
+  kubernetes:
+    enabled: true
+    ## Example:
+    ##  <bt_file> | <cert_file>:<key_file[#password]>[:<ca_cert_file>], --k8s-api-cert <bt_file> | <cert_file>:<key_file[#password]>[:<ca_cert_file>]
+    ##     Use the provided files names to authenticate user and (optionally) verify the K8S API server identity.
+    ##     Each entry must specify full (absolute, or relative to the current directory) path to the respective file.
+    ##     Private key password is optional (needed only if key is password protected).
+    ##     CA certificate is optional. For all files, only PEM file format is supported.
+    ##     Specifying CA certificate only is obsoleted - when single entry is provided
+    ##     for this option, it will be interpreted as the name of a file containing bearer token.
+    ##     Note that the format of this command-line option prohibits use of files whose names contain
+    ##     ':' or '#' characters in the file name.
+    apiAuth: /var/run/secrets/kubernetes.io/serviceaccount/token
+    apiUrl: "https://$(KUBERNETES_SERVICE_HOST)"
+
+    ## Disabling this option may have a performance penalty on large clusters.
+    enableNodeFilter: true
+
+  ## Webserver configuration
+  ## @param falco.webserver.enabled Enables webserver for Falco that listens for Audit Events
+  ## @param falco.webserver.k8sAuditEndpoint Endpoint where Falco embedded webserver accepts K8s audit events
+  ## @param falco.webserver.k8sHealthzEndpoint Endpoint where Falco exposes the health status
+  ##
+  webserver:
+    enabled: true
+    k8sAuditEndpoint: /k8s-audit
+    k8sHealthzEndpoint: /healthz
+
+    ## SSL/TLS parameters for falco.webserver
+    ##
+    ## @param falco.webserver.tls.enabled Enabled TLS/SSL for falco.webserver
+    ## @param falco.webserver.tls.createTlsSecret Allow Helm to create self signed certificate
+    ## @param falco.webserver.tls.hostname Hostname for CA certificate
+    ## @param falco.webserver.tls.existingTlsSecret Name of existing secret containing tls.key, tls.crt, ca.crt
+    ## @param falco.webserver.tls.certificatesMountPath Where falco.webserver certificates are mounted.
+    ##
+    tls:
+      enabled: true
+      createTlsSecret: true
+      hostname: localhost
+      existingTlsSecret: ""
+      certificatesMountPath: /opt/bitnami/falco/conf/certs
+
+  ## @param falco.grpc.enabled Enabled grpc for Falco
+  ## @param falco.grpc.threadiness The number of threads (and context) Falco will use
+  ## @param falco.grpc.unixSocketPath gRPC unix socket path with no authentication
+  ## Ref: https://falco.org/docs/grpc/#configuration
+  ##
+  grpc:
+    enabled: false
+    threadiness: 0
+    unixSocketPath: "unix:///var/run/falco/falco.sock"
+    ## SSL/TLS parameters for falco.grpc
+    ##
+    ## @param falco.grpc.tls.enabled Enabled TLS/SSL for falco.grpc, uses the same certs as falco.webserver.tls
+    ## @param falco.grpc.tls.listenPort falco.grpc port to listen on
+    ##
+    tls:
+      enabled: false
+      listenPort: 5060
+    ## gRPC output parameters for falco.grpc
+    ##
+    ## @param falco.grpc.output.enabled Enable the gRPC output and events will be kept in memory until you read them with a gRPC client
+    output:
+      enabled: false
+
+  ## eBPF configuration
+  ##
+  ## @param falco.ebpf.enabled Enable eBPF support for Falco instead of `falco-probe` kernel module
+  ## @param falco.ebpf.path Specifies the to path ebpf probe
+  ## @param falco.ebpf.settings.hostNetwork Enable eBPF JIT at runtime for performance
+  ## @param falco.ebpf.settings.leastPrivileged Enable leastPrivilege for Falco requires kernel >= 5.8 and falco.ebpf.enabled
+  ebpf:
+    enabled: false
+    path: ""
+    settings:
+      ## Can be skipped if eBPF JIT is enabled from outside the container
+      hostNetwork: true
+      ## This option is only supported with the eBPF driver and a kernel >= 5.8.
+      leastPrivileged: false
+
+  ## Docker configuration
+  ##
+  ## @param falco.docker.enabled Enable docker use for falco
+  ## @param falco.docker.socket Path to docker.sock
+  docker:
+    enabled: true
+    socket: /var/run/docker.sock
+
+  ## Containerd configuration
+  ##
+  ## @param falco.containerd.enabled Enable containerd use for falco
+  ## @param falco.containerd.socket Path to containerd.sock
+  containerd:
+    enabled: true
+    socket: /run/containerd/containerd.sock
+
+  ## Crio configuration
+  ##
+  ## @param falco.crio.enabled Enable crio use for falco
+  ## @param falco.crio.socket Path to crio.sock
+  crio:
+    enabled: true
+    socket: /run/crio/crio.sock
+
+  ## Falco audit configuration
+  ##
+  ## @param falco.auditLog.enabled Enable K8s Audit Log feature for Falco
+  ## @param falco.auditLog.dynamicBackend.enabled Creates an AuditSink which will receive audit logs
+  ## @param falco.auditLog.dynamicBackend.url AuditSink fixed url
+  auditLog:
+    enabled: true
+    dynamicBackend:
+      enabled: true
+      url: ""
+
+  ## @param falco.customRules Third party rules enabled for Falco
+  ##
+  customRules: {}
+    # e.g:
+    # rules-traefik.yaml: |-
+    #   [ rule body ]
+
+  ## Falco rulesFile configuration
+  ## @param falco.rulesFile [array] Location of the rules file(s)
+  ##
+  rulesFile:
+    - /etc/falco/falco_rules.yaml
+    - /etc/falco/falco_rules.local.yaml
+    - /etc/falco/k8s_audit_rules.yaml
+    # - /etc/falco/aws_cloudtrail_rules.yaml
+    - /etc/falco/rules.d
+    # - /etc/falco/rules.optional.d
+
+  ## Falco plugins configuration
+  ## @param falco.plugins [array] Plugins to enable
+  ## Ref: https://falco.org/docs/plugins/#loading-plugins-in-falco
+  ## e.g:
+  ## plugins:
+  ## - name: cloudtrail
+  ##   library_path: libcloudtrail.so
+  ##   init_config: ""
+  ##   open_params: ""
+  ## - name: json
+  ##   library_path: libjson.so
+  ##   init_config: ""
+  plugins: []
+
+  ## Falco loadPlugins configuration
+  ## @param falco.loadPlugins [array] Plugins to enable
+  ## Ref: https://falco.org/docs/plugins/#loading-plugins-in-falco
+  ## e.g: [cloudtrail, json]
+  loadPlugins: []
+
+  ## @param falco.logLevel Minimum log level to include in logs
+  ## Ref: https://falco.org/docs/configuration/#current-configuration-options
+  ## e.g: "emergency", "alert", "critical", "error", "warning", "notice", "info", "debug".
+  logLevel: info
+
+  ## @param falco.priority Minimum priority level to load and run
+  ## Ref: https://falco.org/docs/configuration/#current-configuration-options
+  ## e.g: "emergency", "alert", "critical", "error", "warning", "notice","informational", "debug".
+  priority: debug
+
+  ## @param falco.timeFormatISO8601 Times displayed in log messages and output messages will be in ISO 8601
+  ## Ref: https://falco.org/docs/configuration/#current-configuration-options
+  timeFormatISO8601: false
+
+  ## @param falco.output_timeout Specifies the duration in milliseconds to wait before considering the deadline exceed.
+  output_timeout: 2000
+
+  ## @param falco.bufferedOutputs Enable buffered outputs to any of the output channels
+  bufferedOutputs: false
+
+  ## @param falco.outputs.rate The number of tokens (i.e. right to send a notification) gained per second. Defaults to 1
+  ## @param falco.outputs.maxBurst The maximum number of tokens outstanding. Defaults to 1000.
+  outputs:
+    rate: 1
+    maxBurst: 1000
+
+  ## @param falco.jsonOutput Enable output events in json
+  jsonOutput: false
+
+  ## @param falco.jsonIncludeOutputProperty When using json output, whether or not to include the "output" property
+  jsonIncludeOutputProperty: true
+
+  ## @param falco.jsonIncludeTagsProperty When using json output, whether or not to include the "tags" property
+  jsonIncludeTagsProperty: true
+
+  ## @param falco.logStderr Falco lifecycle / error information logs to stderr
+  ## @param falco.logSyslog Falco lifecycle / error information logs to syslog
+  logStderr: true
+  logSyslog: true
+
+  ## @param falco.syscallEventDrops.threshold Rate at which actions can be taken. Default 0.03333 = one action per 30 seconds.
+  ## @param falco.syscallEventDrops.actions [array] Rate at which actions can be taken. Default 0.03333 = one action per 30 seconds.
+  ## Ref: https://falco.org/docs/event-sources/dropped-events/#introduction
+  ##
+  ## @param falco.syscallEventDrops.rate Rate at which actions can be taken. Default 0.03333 = one action per 30 seconds.
+  ## @param falco.syscallEventDrops.maxBurst Maximum number of actions that can be taken before the steady-state rate is applied.
+  syscallEventDrops:
+    threshold: .1
+    actions:
+      ## eg:
+      ## - ignore: do nothing (default when list of actions is empty)
+      ## - log: log a DEBUG message noting that the buffer was full
+      ## - alert: emit a Falco alert noting that the buffer was full
+      ## - exit: exit Falco with a non-zero rc
+      - log
+      - alert
+    rate: .03333
+    maxBurst: 1
+
+  ## @param falco.syscallEventTimeouts.maxConsecutives Maximum number of consecutive timeouts without an event.
+  syscallEventTimeouts:
+    maxConsecutives: 1000
+
+  ## @param falco.syslogOutput.enabled Alerts will be sent via syslog
+  ## Ref: https://falco.org/docs/alerts/#syslog-output
+  syslogOutput:
+    enabled: true
+
+  ## @param falco.stdoutOutput.enabled Alerts will be sent via stdout
+  ## Ref: https://falco.org/docs/alerts/#standard-output
+  ##
+  stdoutOutput:
+    enabled: true
+  ## @param falco.fileOutput.enabled Alerts will be sent to a file
+  ## @param falco.fileOutput.keepAlive Falco will open the file once and keep it open for all alerts
+  ## @param falco.fileOutput.filename File path with file name
+  ## Ref: https://falco.org/docs/alerts/#file-output
+  ##
+  fileOutput:
+    enabled: false
+    keepAlive: false
+    filename: ./events.txt
+  ## @param falco.programOutput.enabled Falco alerts will be sent to a program.
+  ## @param falco.programOutput.keepAlive Falco will spawn the program and write the alert. The program pipe will be kept open for subsequent alerts
+  ## @param falco.programOutput.program Commands for Falco to run on a alert.
+  ## Ref: https://falco.org/docs/alerts/#program-output
+  ##
+  programOutput:
+    enabled: false
+    keepAlive: false
+    program: ""
+      ## eg:
+      ## program: mail -s "Falco Notification" someone@example.com
+      ##
+      ## program: |
+      ##   jq 'if .priority == "Emergency" or .priority == "Critical" or .priority == "Error" then
+      ##     { attachments: [{ text: .output, color: "danger" }]}
+      ##   elif .priority == "Warning" or .priority == "Notice" then
+      ##     { attachments: [{ text: .output, color: "warning" }]}
+      ##   elif .priority == "Informational" then
+      ##     { attachments: [{ text: .output, color: "good" }]}
+      ##   else
+      ##     { attachments: [{ text: .output }]}
+      ##   end' | curl -d @- -X POST https://hooks.slack.com/services/xxxxxxxxx/xxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxx
+
+  ## @param falco.httpOutput.enabled Alerts will be sent via http[s].
+  ## @param falco.httpOutput.url Url that Alerts will be sent via http[s].
+  ## @param falco.httpOutput.userAgent User-agent that will be sent via HTTP[S] POST
+  ## Ref: https://falco.org/docs/alerts/#http-s-output-send-alerts-to-an-http-s-end-point
+  ##
+  httpOutput:
+    enabled: false
+    ## If falcosidekick.enabled == true the url will automatically be overwritten
+    url: ""
+    userAgent: "falcosecurity/falco"
+  ## @param falco.metadataDownload.maxMb Max allowed response size (in Mb) when fetching metadata from Kubernetes
+  ## @param falco.metadataDownload.chunkWaitUs Sleep time (in μs) for each download chunck when fetching metadata from Kubernetes
+  ## @param falco.metadataDownload.watchFreqSec Watch frequency (in seconds) when fetching metadata from Kubernetes
+  ## Ref: https://falco.org/docs/alerts/#http-s-output-send-alerts-to-an-http-s-end-point
+  ##
+  metadataDownload:
+    maxMb: 100
+    chunkWaitUs: 1000
+    watchFreqSec: 1
+
+## @section Falcosidekick Deployment Parameters
+## @param falcosidekick.enabled Enables Falcosidekick
+##
+falcosidekick:
+  enabled: false
+
+## @section Falco Exporter Deployment Parameters
+## @param falcoExporter.enabled Enables Falco Prometheus Exporter
+##
+falcoExporter:
+  enabled: false

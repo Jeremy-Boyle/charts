@@ -1,0 +1,31 @@
+annotations:
+  category: monitoring
+apiVersion: v2
+appVersion: 0.31.0
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 1.x.x
+description: Falco is a Runtime Security tool designed to detect anomalous activities, and monitor runtime security of your Kubernetes applications and internal components.
+engine: gotpl
+home: https://github.com/bitnami/charts/tree/master/bitnami/falco
+icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/falco/horizontal/color/falco-horizontal-color.svg
+keywords:
+  - falco
+  - falco-exporter
+  - falcosidekick
+  - monitoring
+maintainers:
+  - name: Bitnami
+    url: https://github.com/bitnami/charts
+name: falco
+kubeVersion: '>= 1.16.0-0'
+sources:
+  - https://github.com/Jeremy-Boyle/bitnami-docker-falco
+  - https://github.com/Jeremy-Boyle/bitnami-docker-falcosidekick
+  - https://github.com/Jeremy-Boyle/bitnami-docker-falco-exporter
+  - https://github.com/Jeremy-Boyle/bitnami-docker-falco-event-generator
+version: 0.1.0
+---

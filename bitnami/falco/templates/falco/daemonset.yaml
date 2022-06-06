@@ -1,0 +1,289 @@
+{{- if and .Values.falco.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ template "falco.falco.fullname" . }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: falco
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.falco.updateStrategy }}
+  updateStrategy: {{- toYaml .Values.falco.updateStrategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: falco
+  template:
+    metadata:
+      {{- if .Values.falco.podAnnotations }}
+      annotations: {{- include "common.tplvalues.render" (dict "value" .Values.falco.podAnnotations "context" $) | nindent 8 }}
+      {{- end }}
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: falco
+        {{- if .Values.falco.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.falco.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ template "falco.falco.serviceAccountName" . }}
+      {{- include "falco.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.falco.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.falco.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.falco.affinity }}
+      affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.falco.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.falco.podAffinityPreset "component" "falco" "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.falco.podAntiAffinityPreset "component" "falco" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.falco.nodeAffinityPreset.type "key" .Values.falco.nodeAffinityPreset.key "values" .Values.falco.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.falco.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" ( dict "value" .Values.falco.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.falco.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.falco.tolerations "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.falco.priorityClassName }}
+      priorityClassName: {{ .Values.falco.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.falco.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.falco.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if (and .Values.falco.ebpf.enabled .Values.falco.ebpf.settings.hostNetwork) }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      initContainers:
+        {{- if .Values.falco.initContainers }}
+          {{- include "common.tplvalues.render" (dict "value" .Values.falco.initContainers "context" $) | nindent 8 }}
+        {{- end }}
+      containers:
+        - name: falco
+          image: {{ template "falco.image" . }}
+          imagePullPolicy: {{ .Values.falco.image.pullPolicy }}
+          {{- if .Values.falco.containerSecurityContext.enabled }}
+          securityContext:
+            privileged: {{ not .Values.falco.ebpf.settings.leastPrivileged}}
+            {{- if .Values.falco.ebpf.settings.leastPrivileged }}
+            capabilities:
+              add:
+              - BPF
+              - SYS_RESOURCE
+              - PERFMON
+            {{- end }}
+          {{- end }}
+          command:
+            - /usr/bin/falco
+          args:
+            {{- if and .Values.falco.containerd .Values.falco.containerd.enabled }}
+            - --cri
+            - /run/containerd/containerd.sock
+            {{- end }}
+            {{- if and .Values.falco.crio .Values.falco.crio.enabled }}
+            - --cri
+            - /run/crio/crio.sock
+            {{- end }}
+            {{- if .Values.falco.kubernetes.enabled }}
+            - --k8s-api-cert
+            - {{ .Values.falco.kubernetes.apiAuth }}
+            - --k8s-api
+            - {{ .Values.falco.kubernetes.apiUrl }}
+            {{- if .Values.falco.kubernetes.enableNodeFilter }}
+            - --k8s-node
+            - "$(FALCO_K8S_NODE_NAME)"
+            {{- end }}
+            {{- end }}
+            - -pk
+            {{- if .Values.falco.extraArgs }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.falco.extraArgs "context" $) | nindent 12 }}
+            {{- end }}
+          env:
+            - name: FALCO_K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          {{- if .Values.falco.ebpf.enabled }}
+            - name: FALCO_BPF_PROBE
+              value: {{ .Values.falco.ebpf.path }}
+          {{- end }}
+            {{- if .Values.falco.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.falco.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          envFrom:
+            {{- if .Values.falco.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.falco.extraEnvVarsCM "context" $) }}
+            {{- end }}
+            {{- if .Values.falco.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.falco.extraEnvVarsSecret "context" $) }}
+            {{- end }}
+          ports:
+            - containerPort: {{ .Values.falco.containerPorts.http }}
+              protocol: TCP
+          {{- if .Values.falco.resources }}
+          resources: {{- toYaml .Values.falco.resources | nindent 12 }}
+          {{- end }}
+          {{- if and .Values.falco.webserver.enabled .Values.falco.livenessProbe.enabled }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.falco.livenessProbe "enabled") "context" $) | nindent 12 }}
+            httpGet:
+              path: {{ .Values.falco.webserver.k8sHealthzEndpoint }}
+              port: {{ .Values.falco.containerPorts.http }}
+              {{- if .Values.falco.webserver.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
+          {{- else if and .Values.falco.webserver.enabled .Values.falco.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.falco.customLivenessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if and .Values.falco.webserver.enabled .Values.falco.readinessProbe.enabled }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.falco.readinessProbe "enabled") "context" $) | nindent 12 }}
+            httpGet:
+              path: {{ .Values.falco.webserver.k8sHealthzEndpoint }}
+              port: {{ .Values.falco.containerPorts.http }}
+              {{- if .Values.falco.webserver.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
+          {{- else if and .Values.falco.webserver.enabled .Values.falco.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.falco.customReadinessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.falco.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.falco.lifecycleHooks "context" $) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.falco.webserver.tls.enabled }}
+            - name: falco-ca-certificate
+              mountPath: {{ .Values.falco.webserver.tls.certificatesMountPath }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.falco.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.falco.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+            {{- if .Values.falco.docker.enabled }}
+            - mountPath: /host/var/run/docker.sock
+              name: docker-socket
+            {{- end}}
+            {{- if .Values.falco.containerd.enabled }}
+            - mountPath: /host/run/containerd/containerd.sock
+              name: containerd-socket
+            {{- end}}
+            {{- if and .Values.falco.crio .Values.falco.crio.enabled }}
+            - mountPath: /host/run/crio/crio.sock
+              name: crio-socket
+            {{- end}}
+            - mountPath: /host/dev
+              name: dev-fs
+              readOnly: true
+            - mountPath: /host/proc
+              name: proc-fs
+              readOnly: true
+            - mountPath: /host/boot
+              name: boot-fs
+              readOnly: true
+            - mountPath: /host/lib/modules
+              name: lib-modules
+            - mountPath: /host/usr
+              name: usr-fs
+              readOnly: true
+            - mountPath: /host/etc
+              name: etc-fs
+              readOnly: true
+            - mountPath: /etc/falco
+              name: config-volume
+            {{- if .Values.falco.customRules }}
+            - mountPath: /etc/falco/rules.d
+              name: rules-volume
+            {{- end }}
+            {{- if and .Values.falco.grpc.enabled .Values.falco.grpc.unixSocketPath }}
+            - mountPath: {{ include "falco.unixSocketDir" . }}
+              name: grpc-socket-dir
+            {{- end }}
+            {{- if or .Values.falco.webserver.tls.enabled (and .Values.falco.grpc.enabled (not .Values.falco.grpc.unixSocketPath)) }}
+            - mountPath: /etc/falco/certs
+              name: falco-ca-certificate
+              readOnly: true
+            {{- end }}
+        {{- if .Values.falco.sidecars }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.falco.sidecars "context" $) | nindent 8 }}
+        {{- end }}
+      volumes:
+        {{- if .Values.falco.docker.enabled }}
+        - name: docker-socket
+          hostPath:
+            path: {{ .Values.falco.docker.socket }}
+        {{- end}}
+        {{- if .Values.falco.containerd.enabled }}
+        - name: containerd-socket
+          hostPath:
+            path: {{ .Values.falco.containerd.socket }}
+        {{- end}}
+        {{- if and .Values.falco.crio .Values.falco.crio.enabled }}
+        - name: crio-socket
+          hostPath:
+            path: {{ .Values.falco.crio.socket }}
+        {{- end}}
+        - name: dev-fs
+          hostPath:
+            path: /dev
+        - name: proc-fs
+          hostPath:
+            path: /proc
+        - name: boot-fs
+          hostPath:
+            path: /boot
+        - name: lib-modules
+          hostPath:
+            path: /lib/modules
+        - name: usr-fs
+          hostPath:
+            path: /usr
+        - name: etc-fs
+          hostPath:
+            path: /etc
+        {{- if .Values.falco.webserver.tls.enabled }}
+        - name: falco-ca-certificate
+          secret:
+            {{- if .Values.falco.webserver.tls.existingTlsSecret }}
+            secretName: {{ include "falco.webserver.tls.existingTlsSecret" . }}
+            {{- else }}
+            secretName: {{ template "falco.falco.webserver.tls.fullname" . }}
+            {{- end }}
+            defaultMode: 256
+        {{- end }}
+        {{- if .Values.falco.extraVolumes }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.falco.extraVolumes "context" $) | nindent 8 }}
+        {{- end }}
+        - name: config-volume
+          configMap:
+            name: {{ template "falco.falco.fullname" . }}
+            items:
+              - key: falco.yaml
+                path: falco.yaml
+              - key: falco_rules.yaml
+                path: falco_rules.yaml
+              - key: falco_rules.local.yaml
+                path: falco_rules.local.yaml
+              - key: application_rules.yaml
+                path: rules.available/application_rules.yaml
+              {{- if .Values.falco.auditLog.enabled }}
+              - key: k8s_audit_rules.yaml
+                path: k8s_audit_rules.yaml
+              {{- end }}
+              - key: aws_cloudtrail_rules.yaml
+                path: aws_cloudtrail_rules.yaml
+        {{- if .Values.falco.customRules }}
+        - name: rules-volume
+          configMap:
+            name: {{ template "falco.fullname" . }}-rules
+        {{- end }}
+        {{- if and .Values.falco.grpc.enabled .Values.falco.grpc.unixSocketPath }}
+        - name: grpc-socket-dir
+          hostPath:
+            path: {{ include "falco.unixSocketDir" . }}
+        {{- end }}
+{{- end }}
